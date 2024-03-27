@@ -1,16 +1,21 @@
 package com.matias.curso.springboot.jpa.springbootjparelationship.entities;
 
-import java.util.ArrayList;
-import java.util.List;
+// import java.util.ArrayList;
+import java.util.HashSet;
+// import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+// import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "clients")
@@ -23,12 +28,26 @@ public class Client {
     private String name;
     private String lastname;
 
+    // @JoinColumn(name = "client_id")
+    // @OneToMany(cascade = CascadeType.ALL)    Si se quita orphanRemoval al eliminar
+    //                                          el registro, no se elimina de su tabla original,
+    //                                          osea queda Huerfano
+    // @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    // @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)  Busca por todo NO RECOMENDABLE
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "client_id")
-    private List<Address> addresses;
+    @JoinTable(
+        name = "tbl_clientes_to_direcciones",
+        joinColumns = @JoinColumn(name = "id_cliente"), 
+        inverseJoinColumns = @JoinColumn(name = "id_direcciones"), 
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_direcciones"}))
+    private Set<Address> addresses;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
+    private Set<Invoice> invoices;
 
     public Client() {
-        addresses = new ArrayList<>();
+        addresses = new HashSet<>();
+        invoices = new HashSet<>();
     }
 
     public Client(String name, String lastname) {
@@ -61,19 +80,34 @@ public class Client {
         this.lastname = lastname;
     }
 
-    public List<Address> getAddresses() {
+    public Set<Address> getAddresses() {
         return addresses;
     }
 
-    public void setAddresses(List<Address> addresses) {
+    public void setAddresses(Set<Address> addresses) {
         this.addresses = addresses;
+    }
+
+    public Set<Invoice> getInvoices() {
+        return invoices;
+    }
+
+    public void setInvoices(Set<Invoice> invoices) {
+        this.invoices = invoices;
+    }
+
+    public Client addInvoice(Invoice invoice){
+        invoices.add(invoice);
+        invoice.setClient(this);
+        return this;
     }
 
     @Override
     public String toString() {
-        return "{id=" + id + 
-        ", name=" + name + 
-        ", lastname=" + lastname + 
-        ", addresses=" + addresses + "}";
+        return "{id=" + id +
+                ", name=" + name +
+                ", lastname=" + lastname +
+                ", invoices=" + invoices +
+                ", addresses=" + addresses + "}";
     }
 }
